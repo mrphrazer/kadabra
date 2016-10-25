@@ -15,6 +15,7 @@ class Emulator:
         self.mu = Uc(arch.uc_arch, arch.uc_mode)
         self.arch = arch
         self.memory = Memory()
+        self.breakpoints = dict()
 
     def reg_read(self, reg):
         reg = self.registers[reg]
@@ -87,3 +88,11 @@ class Emulator:
         mem = self.dump_mem()
 
         return registers, mem
+
+    def add_breakpoint(self, addr, cb):
+        self.breakpoints[addr] = cb
+
+    def remmove_breakpoint(self, addr):
+        if addr in self.breakpoints:
+            del[self.breakpoints[addr]]
+

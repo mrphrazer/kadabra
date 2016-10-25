@@ -32,6 +32,12 @@ def hook_code(uc, address, size, emu):
     opcode = emu.mem_read(address, size)
     print "0x{:x};{}".format(address, str(opcode).encode("hex"))
 
+    # handle breakpoint
+    if address in emu.breakpoints:
+        emu.breakpoints[address](emu)
+
+
+
     return True
 
 

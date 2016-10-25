@@ -12,7 +12,12 @@ code += "\xec\x8b\x55\xec\x8b\x45\xfc\x01\xd0\x85\xc0"
 code += "\x75\x07\xb8\x00\x00\x00\x00\xeb\x05\xb8\x01"
 code += "\x00\x00\x00\x5d\xc3"
 
+def bp_test(emu):
+    cur_addr = emu.reg_read(emu.arch.IP)
 
+    print "Current address: 0x{:x}".format(cur_addr)
+
+    return True
 
 emu = Emulator(ARCH_X86_64)
 
@@ -29,6 +34,10 @@ emu.add_hooks()
 
 emu.reg_write("RBP", 0x11)
 emu.reg_write("RSP", 0x222)
+
+emu.add_breakpoint(0x1000001, bp_test)
+
+
 
 emu.start_execution(START_ADDR, START_ADDR + len(code) - 1)
 
