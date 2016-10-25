@@ -1,7 +1,7 @@
 from random import getrandbits
 from collections import OrderedDict
 from kadabra.arch.arch import Architecture
-from kadabra.emulator.memory import PAGESIZE
+from kadabra.emulator.memory import PAGESIZE, Memory
 
 from kadabra.emulator.hooks import *
 
@@ -11,10 +11,10 @@ class Emulator:
 
         arch = Architecture(arch_id)
         self.arch = arch
-
         self.registers = arch.registers
         self.mu = Uc(arch.uc_arch, arch.uc_mode)
         self.arch = arch
+        self.memory = Memory()
 
     def reg_read(self, reg):
         reg = self.registers[reg]
@@ -29,6 +29,12 @@ class Emulator:
 
     def mem_write(self, addr, val):
         self.mu.mem_write(addr, val)
+        self.add_to_emulator_mem(addr, val)
+
+    def add_to_emulator_mem(self, addr, val):
+        for offset, byte in enumerate(val):
+            current_addr = addr + offset
+            self.memory[current_addr] = byte
 
     def start_execution(self, start, end):
         self.mu.emu_start(start, end)
@@ -50,8 +56,9 @@ class Emulator:
     def add_hooks(self):
         self.mu.hook_add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED,
                          hook_mem_invalid, self)
+        self.mu.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, hook_mem_access, self)
 
-        self.mu.hook_add(UC_HOOK_CODE, hook_code)
+        self.mu.hook_add(UC_HOOK_CODE, hook_code, self)
         self.mu.hook_add(UC_HOOK_BLOCK, hook_block)
 
     def initialise_regs_random(self):
@@ -63,7 +70,20 @@ class Emulator:
     def dump_registers(self):
         dump = OrderedDict()
         for reg in self.registers:
-            value = self.reg_read(reg)
+            value = self.reg_read(reg) % 2 ** self.arch.size
             dump.update({reg: value})
 
         return dump
+
+    def dump_mem(self):
+        mem = OrderedDict()
+        for addr in sorted(self.memory):
+            mem[addr] = self.memory[addr]
+
+        return mem
+
+    def dump_state(self):
+        registers = self.dump_registers()
+        mem = self.dump_mem()
+
+        return registers, mem
