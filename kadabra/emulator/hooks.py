@@ -15,32 +15,44 @@ def hook_mem_access(uc, access, address, size, value, emu):
     current_address = emu.reg_read(emu.arch.IP)
     if access == UC_MEM_WRITE:
         value = value % (2 ** (size * 8))
-        print "Instruction 0x{:x} writes value 0x{:x} with 0x{:x} bytes into 0x{:x}".format(current_address, value,
-                                                                                   size, address)
-        value = int_to_hex(value, size)
-        emu.add_to_emulator_mem(address, value)
+        if emu.verbosity_level > 1:
+            print "Instruction 0x{:x} writes value 0x{:x} with 0x{:x} bytes into 0x{:x}".format(current_address, value,
+                                                                                                size, address)
+        value_hex = int_to_hex(value, size)
+        emu.add_to_emulator_mem(address, value_hex)
 
-        return True
     else:
         value = addr_to_int(emu.mem_read(address, size))
-        print "Instruction 0x{:x} reads value 0x{:x} with 0x{:x} bytes from 0x{:x}".format(current_address, value,
-                                                                                           size, address)
-        return True
+        if emu.verbosity_level > 1:
+            print "Instruction 0x{:x} reads value 0x{:x} with 0x{:x} bytes from 0x{:x}".format(current_address, value,
+                                                                                               size, address)
+    if emu.memory_trace:
+        emu.memory_tracer.add_trace(current_address, access, address, value, size)
+
+    return True
 
 
 def hook_code(uc, address, size, emu):
-    opcode = emu.mem_read(address, size)
-    print "0x{:x};{}".format(address, str(opcode).encode("hex"))
+    opcode = str(emu.mem_read(address, size))
+    if emu.verbosity_level > 1:
+        print "0x{:x};{}".format(address, opcode.encode("hex"))
 
     # handle breakpoint
     if address in emu.breakpoints:
         emu.breakpoints[address](emu)
 
-
+    if emu.instruction_trace:
+        emu.code_tracer.add_instruction_trace(address, opcode, size)
 
     return True
 
 
-def hook_block(uc, address, size, user_data):
-    print "Basic block at 0x{:x}".format(address)
+def hook_block(uc, address, size, emu):
+    opcodes = str(emu.mem_read(address, size))
+
+    if emu.verbosity_level > 1:
+        print "Basic block at 0x{:x}".format(address)
+
+    if emu.basic_block_trace:
+        emu.code_tracer.add_basic_block_trace(address, opcodes, size)
     return True
