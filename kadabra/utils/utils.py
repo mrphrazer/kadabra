@@ -32,3 +32,13 @@ def addr_to_int(addr):
     :return: int
     """
     return int(reverse_bytes(str(addr).encode("hex")), 16)
+
+
+def to_unsinged(v, size):
+    """
+    Transforms an signed int into an unsigned int
+    :param v: signed int
+    :param size: size of unsigned int
+    :return: unsigned int
+    """
+    return v & (2 ** size - 1)

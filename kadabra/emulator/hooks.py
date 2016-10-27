@@ -1,9 +1,11 @@
 from unicorn import *
 
-from kadabra.utils.utils import addr_to_int, int_to_hex
+from kadabra.utils.utils import addr_to_int, int_to_hex, to_unsinged
 
 
 def hook_mem_invalid(uc, access, address, size, value, emulator):
+    value = to_unsinged(value, size * 8)
+
     if access == UC_MEM_WRITE_UNMAPPED or access == UC_MEM_READ_UNMAPPED:
         emulator.mem_map(address, size)
         return True
@@ -13,21 +15,25 @@ def hook_mem_invalid(uc, access, address, size, value, emulator):
 
 def hook_mem_access(uc, access, address, size, value, emu):
     current_address = emu.reg_read(emu.arch.IP)
+    value = to_unsinged(value, size * 8)
+
     if access == UC_MEM_WRITE:
-        value = value % (2 ** (size * 8))
+
         if emu.verbosity_level > 1:
             print "Instruction 0x{:x} writes value 0x{:x} with 0x{:x} bytes into 0x{:x}".format(current_address, value,
                                                                                                 size, address)
         value_hex = int_to_hex(value, size)
+        prev_value = addr_to_int(emu.mem_read(address, size)) if address in emu.memory else 0
         emu.add_to_emulator_mem(address, value_hex)
 
     else:
         value = addr_to_int(emu.mem_read(address, size))
+        prev_value = value
         if emu.verbosity_level > 1:
             print "Instruction 0x{:x} reads value 0x{:x} with 0x{:x} bytes from 0x{:x}".format(current_address, value,
                                                                                                size, address)
     if emu.memory_trace:
-        emu.memory_tracer.add_trace(current_address, access, address, value, size)
+        emu.memory_tracer.add_trace(current_address, access, address, prev_value, value, size)
 
     return True
 

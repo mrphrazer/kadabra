@@ -1,4 +1,4 @@
-from collections import namedtuple, deque
+from collections import namedtuple, deque, OrderedDict
 from unicorn import UC_MEM_READ, UC_MEM_WRITE
 
 
@@ -6,9 +6,15 @@ class MemoryTracer(deque):
     def __init__(self):
         super(MemoryTracer, self).__init__()
         self._instr_to_mem_states = dict()
+        self.reads = []
+        self.writes = []
 
-    def gen_trace_state(self, instr_addr, access, mem_addr, value, size):
-        state = namedtuple("TraceState", 'instr_addr, access, mem_addr, value, size')
+    def gen_trace_state(self, instr_addr, access, mem_addr, prev_value, value, size):
+        if access == UC_MEM_WRITE:
+            state = namedtuple("MemState", 'instr_addr, access, mem_addr, prev_value, value, size')
+            state.prev_value = prev_value
+        else:
+            state = namedtuple("MemState", 'instr_addr, access, mem_addr value, size')
 
         state.instr_addr = instr_addr
         state.access = access
@@ -18,8 +24,8 @@ class MemoryTracer(deque):
 
         return state
 
-    def add_trace(self, instr_addr, access, mem_addr, value, size):
-        state = self.gen_trace_state(instr_addr, access, mem_addr, value, size)
+    def add_trace(self, instr_addr, access, mem_addr, prev_value, value, size):
+        state = self.gen_trace_state(instr_addr, access, mem_addr, prev_value, value, size)
 
         self.append(state)
 
@@ -27,9 +33,27 @@ class MemoryTracer(deque):
             self._instr_to_mem_states[state.instr_addr] = []
         self._instr_to_mem_states[state.instr_addr].append(state)
 
+        if access == UC_MEM_WRITE:
+            self.writes.append(state)
+        else:
+            self.reads.append(state)
+
     def get_mem_states(self, addr):
         if addr in self._instr_to_mem_states:
             return self._instr_to_mem_states[addr]
+
+    def get_modified(self):
+        differences = dict()
+
+        for state in self:
+            if state.access != UC_MEM_WRITE:
+                continue
+            if not state.mem_addr in differences:
+                differences[state.mem_addr] = [state.prev_value, state.value]
+            else:
+                differences[state.mem_addr][1] = state.value
+
+        return differences
 
 
 class CodeTracer(object):
@@ -37,7 +61,8 @@ class CodeTracer(object):
         self.instruction_trace = deque()
         self.basic_block_trace = deque()
 
-    def gen_instruction_state(self, addr, opcode, size):
+    @staticmethod
+    def gen_instruction_state(addr, opcode, size):
         state = namedtuple("InstructionState", 'address, opcode, size')
 
         state.address = addr
@@ -46,7 +71,8 @@ class CodeTracer(object):
 
         return state
 
-    def gen_basic_block_state(self, addr, opcodes, size):
+    @staticmethod
+    def gen_basic_block_state(addr, opcodes, size):
         state = namedtuple("BasicBlockState", 'address, opcodes, size')
 
         state.address = addr

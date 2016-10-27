@@ -57,9 +57,11 @@ class Emulator:
         page_size = (int(size / PAGESIZE) * PAGESIZE) + PAGESIZE
 
         self.mu.mem_map(base_addr, page_size)
+        self.memory.map(base_addr, page_size)
 
     def mem_unmap(self, addr, size):
         self.mu.mem_unmap(addr, size)
+        self.memory.unmap(addr, size)
 
     def add_hooks(self):
         self.mu.hook_add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED,
@@ -78,7 +80,7 @@ class Emulator:
     def dump_registers(self):
         dump = OrderedDict()
         for reg in self.registers:
-            value = self.reg_read(reg) % 2 ** self.arch.size
+            value = self.reg_read(reg)
             dump.update({reg: value})
 
         return dump
