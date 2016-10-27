@@ -6,8 +6,8 @@ class MemoryTracer(deque):
     def __init__(self):
         super(MemoryTracer, self).__init__()
         self._instr_to_mem_states = dict()
-        self.reads = []
-        self.writes = []
+        self._reads = []
+        self._writes = []
 
     def gen_trace_state(self, instr_addr, access, mem_addr, prev_value, value, size):
         if access == UC_MEM_WRITE:
@@ -34,26 +34,19 @@ class MemoryTracer(deque):
         self._instr_to_mem_states[state.instr_addr].append(state)
 
         if access == UC_MEM_WRITE:
-            self.writes.append(state)
+            self._writes.append(state)
         else:
-            self.reads.append(state)
+            self._reads.append(state)
 
-    def get_mem_states(self, addr):
+    def get_mem_states_by_instruction(self, addr):
         if addr in self._instr_to_mem_states:
             return self._instr_to_mem_states[addr]
 
-    def get_modified(self):
-        differences = dict()
+    def get_mem_reads(self):
+        return self._reads
 
-        for state in self:
-            if state.access != UC_MEM_WRITE:
-                continue
-            if not state.mem_addr in differences:
-                differences[state.mem_addr] = [state.prev_value, state.value]
-            else:
-                differences[state.mem_addr][1] = state.value
-
-        return differences
+    def get_mem_writes(self):
+        return self._writes
 
 
 class CodeTracer(object):
