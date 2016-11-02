@@ -1,5 +1,5 @@
 from random import getrandbits
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from kadabra.arch.arch import Architecture
 from kadabra.emulator.memory import PAGESIZE, Memory
 from kadabra.emulator.tracer import MemoryTracer, CodeTracer
@@ -27,6 +27,7 @@ class Emulator:
         self.start_addr = 0
         self.end_addr = 0
         self.cont_addr = 0
+        self.enforced_path = deque()
 
     def reg_read(self, reg):
         reg = self.registers[reg]
@@ -67,7 +68,7 @@ class Emulator:
         page_size = (int(size / PAGESIZE) * PAGESIZE) + PAGESIZE
 
         self.mu.mem_map(base_addr, page_size)
-        # self.memory.map(base_addr, page_size)
+        self.memory.map(base_addr, page_size)
 
     def mem_unmap(self, addr, size):
         self.mu.mem_unmap(addr, size)
@@ -138,3 +139,11 @@ class Emulator:
             self.code_tracer.reset_basic_block_trace()
         if instruction:
             self.code_tracer.reset_instruction_trace()
+
+    def enforce_path(self, path):
+        self.enforced_path = deque(path)
+
+        while len(self.enforced_path) > 1:
+            self.start_execution(self.enforced_path[0], self.enforced_path[-1])
+
+        self.enforced_path = deque()
