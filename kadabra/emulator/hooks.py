@@ -45,7 +45,11 @@ def hook_code(uc, address, size, emu):
 
     # handle breakpoint
     if address in emu.breakpoints:
-        emu.breakpoints[address](emu)
+        call = emu.breakpoints[address](emu)
+
+        # bp handler returns False
+        if not call:
+            emu.stop_execution()
 
     if emu.instruction_trace:
         emu.code_tracer.add_instruction_trace(address, opcode, size)

@@ -24,6 +24,10 @@ class Emulator:
         self.code_tracer = CodeTracer()
         self.verbosity_level = 0
 
+        self.start_addr = 0
+        self.end_addr = 0
+        self.cont_addr = 0
+
     def reg_read(self, reg):
         reg = self.registers[reg]
         return self.mu.reg_read(reg)
@@ -45,10 +49,16 @@ class Emulator:
             self.memory[current_addr] = byte
 
     def start_execution(self, start, end):
+        self.start_addr = start
+        self.end_addr = end
         self.mu.emu_start(start, end)
 
     def stop_execution(self):
+        self.cont_addr = self.reg_read(self.arch.IP)
         self.mu.emu_stop()
+
+    def continue_execution(self):
+        self.start_execution(self.cont_addr, self.end_addr)
 
     def mem_map(self, addr, size):
         alignment = addr % PAGESIZE
@@ -57,7 +67,7 @@ class Emulator:
         page_size = (int(size / PAGESIZE) * PAGESIZE) + PAGESIZE
 
         self.mu.mem_map(base_addr, page_size)
-        self.memory.map(base_addr, page_size)
+        # self.memory.map(base_addr, page_size)
 
     def mem_unmap(self, addr, size):
         self.mu.mem_unmap(addr, size)
