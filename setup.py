@@ -4,7 +4,7 @@ setup(
     name='kadabra',
     version='',
     packages=['kadabra', 'kadabra.arch', 'kadabra.arch.x86', 'kadabra.loader', 'kadabra.loader.elf',
-              'kadabra.emulator'],
+              'kadabra.emulator', 'kadabra.utils'],
     url='https://github.com/mrphrazer/kadabra',
     license='GPLv2',
     author='Tim Blazytko',
