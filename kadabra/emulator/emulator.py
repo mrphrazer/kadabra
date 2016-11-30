@@ -29,12 +29,15 @@ class Emulator:
         self.cont_addr = 0
         self.enforced_path = deque()
 
+    def reg_size(self, reg):
+        return self.registers[reg][1]
+
     def reg_read(self, reg):
-        reg = self.registers[reg]
+        reg = self.registers[reg][0]
         return self.mu.reg_read(reg)
 
     def reg_write(self, reg, val):
-        reg = self.registers[reg]
+        reg = self.registers[reg][0]
         self.mu.reg_write(reg, val)
 
     def mem_read(self, addr, size):

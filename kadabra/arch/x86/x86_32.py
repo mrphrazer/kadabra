@@ -15,14 +15,14 @@ class X86_32:
 
         self.size = 32
 
-        self.registers = OrderedDict([("EAX", UC_X86_REG_EAX),
-                                      ("EBX", UC_X86_REG_EBX),
-                                      ("ECX", UC_X86_REG_ECX),
-                                      ("EDX", UC_X86_REG_EDX),
-                                      ("ESI", UC_X86_REG_ESI),
-                                      ("EDI", UC_X86_REG_EDI),
-                                      ("EBP", UC_X86_REG_EBP),
-                                      ("ESP", UC_X86_REG_ESP),
-                                      ("EIP", UC_X86_REG_EIP),
-                                      ("EFLAGS", UC_X86_REG_EFLAGS),
+        self.registers = OrderedDict([("EAX", (UC_X86_REG_EAX, 32)),
+                                      ("EBX", (UC_X86_REG_EBX, 32)),
+                                      ("ECX", (UC_X86_REG_ECX, 32)),
+                                      ("EDX", (UC_X86_REG_EDX, 32)),
+                                      ("ESI", (UC_X86_REG_ESI, 32)),
+                                      ("EDI", (UC_X86_REG_EDI, 32)),
+                                      ("EBP", (UC_X86_REG_EBP, 32)),
+                                      ("ESP", (UC_X86_REG_ESP, 32)),
+                                      ("EIP", (UC_X86_REG_EIP, 32)),
+                                      ("EFLAGS", (UC_X86_REG_EFLAGS, 32)),
                                       ])
