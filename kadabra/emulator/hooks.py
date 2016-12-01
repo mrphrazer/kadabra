@@ -55,11 +55,11 @@ def hook_code(uc, address, size, emu):
         emu.code_tracer.add_instruction_trace(address, opcode, size)
 
     if emu.enforced_path:
-        path_addr = emu.enforced_path.popleft()
+        path_addr, path_instr_size = emu.enforced_path.popleft()
 
         if path_addr != address:
             emu.stop_execution()
-            emu.enforced_path.appendleft(path_addr)
+            emu.enforced_path.appendleft((path_addr, size))
             return False
 
     return True

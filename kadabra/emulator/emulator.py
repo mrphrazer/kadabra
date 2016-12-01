@@ -147,6 +147,13 @@ class Emulator:
         self.enforced_path = deque(path)
 
         while len(self.enforced_path) > 1:
-            self.start_execution(self.enforced_path[0], self.enforced_path[-1])
+            start_addr = self.enforced_path[0][0]
+            end_addr = self.enforced_path[-1][0]
+            self.start_execution(start_addr, end_addr)
+
+        start_addr = self.enforced_path[0][0]
+        instr_size = self.enforced_path[0][1]
+        end_addr = start_addr + instr_size
+        self.start_execution(start_addr, end_addr)
 
         self.enforced_path = deque()
