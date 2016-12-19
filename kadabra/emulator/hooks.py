@@ -2,6 +2,11 @@ from unicorn import *
 
 from kadabra.utils.utils import addr_to_int, int_to_hex, to_unsinged
 
+HOOK_MEM_RW = 0
+HOOK_MEM_UNMAPPED = 1
+HOOK_BASIC_BLOCK = 2
+HOOK_INSTRUCTION = 3
+
 
 def hook_mem_invalid(uc, access, address, size, value, emulator):
     value = to_unsinged(value, size * 8)
@@ -44,8 +49,10 @@ def hook_code(uc, address, size, emu):
         print "0x{:x};{}".format(address, opcode.encode("hex"))
 
     # handle breakpoint
-    if emu.instruction_breakpoints_enabled and address in emu.breakpoints:
-        call = emu.breakpoints[address](emu)
+    if emu.instruction_breakpoints_enabled and address in emu.instruction_breakpoints:
+        cb = emu.instruction_breakpoints[address][0]
+        args = emu.instruction_breakpoints[address][1]
+        call = cb(emu, *args)
 
         # bp handler returns False
         if not call:
@@ -69,8 +76,10 @@ def hook_block(uc, address, size, emu):
     opcodes = str(emu.mem_read(address, size))
 
     # handle breakpoint
-    if emu.basic_block_breakpoints_enabled and address in emu.breakpoints:
-        call = emu.breakpoints[address](emu)
+    if emu.basic_block_breakpoints_enabled and address in emu.basic_block_breakpoints:
+        cb = emu.basic_block_breakpoints[address][0]
+        args = emu.basic_block_breakpoints[address][1]
+        call = cb(emu, *args)
 
         # bp handler returns False
         if not call:

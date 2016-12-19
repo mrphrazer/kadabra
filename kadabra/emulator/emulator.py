@@ -16,7 +16,8 @@ class Emulator:
         self.mu = Uc(arch.uc_arch, arch.uc_mode)
         self.arch = arch
         self.memory = Memory()
-        self.breakpoints = dict()
+        self.basic_block_breakpoints = dict()
+        self.instruction_breakpoints = dict()
         self.basic_block_breakpoints_enabled = False
         self.instruction_breakpoints_enabled = False
         self.memory_trace = False
@@ -25,13 +26,14 @@ class Emulator:
         self.memory_tracer = MemoryTracer()
         self.code_tracer = CodeTracer()
         self.verbosity_level = 0
-
-        self.enabled_hooks = set()
+        self.hooks = dict()
 
         self.start_addr = 0
         self.end_addr = 0
         self.cont_addr = 0
         self.enforced_path = deque()
+
+        self._initialise_hooks()
 
     def reg_size(self, reg):
         return self.registers[reg][1]
@@ -81,43 +83,47 @@ class Emulator:
         self.mu.mem_unmap(addr, size)
         self.memory.unmap(addr, size)
 
+    def _initialise_hooks(self):
+        self.hooks[HOOK_MEM_RW] = 0
+        self.hooks[HOOK_MEM_UNMAPPED] = 0
+        self.hooks[HOOK_BASIC_BLOCK] = 0
+        self.hooks[HOOK_INSTRUCTION] = 0
+
     def set_hooks(self, mem_rw=False, mem_unmapped=False, basic_block=False, instruction=False):
 
-        if mem_unmapped and (UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED) not in self.enabled_hooks:
-            self.mu.hook_add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED,
-                             hook_mem_invalid, self)
-            self.enabled_hooks.add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED)
+        if mem_unmapped and not self.hooks[HOOK_MEM_UNMAPPED]:
+            h = self.mu.hook_add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED, hook_mem_invalid, self)
+            self.hooks[HOOK_MEM_UNMAPPED] = h
 
-        if mem_rw and (UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE) not in self.enabled_hooks:
-            self.mu.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, hook_mem_access, self)
-            self.enabled_hooks.add((UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE))
+        if mem_rw and not self.hooks[HOOK_MEM_RW]:
+            h = self.mu.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, hook_mem_access, self)
+            self.hooks[HOOK_MEM_RW] = h
 
-        if basic_block and UC_HOOK_BLOCK not in self.enabled_hooks:
-            self.mu.hook_add(UC_HOOK_BLOCK, hook_block, self)
-            self.enabled_hooks.add(UC_HOOK_BLOCK)
+        if basic_block and not self.hooks[HOOK_BASIC_BLOCK]:
+            h = self.mu.hook_add(UC_HOOK_BLOCK, hook_block, self)
+            self.hooks[HOOK_BASIC_BLOCK] = h
 
-        if instruction and UC_HOOK_CODE not in self.enabled_hooks:
-            self.mu.hook_add(UC_HOOK_CODE, hook_code, self)
-            self.enabled_hooks.add(UC_HOOK_CODE)
+        if instruction and not self.hooks[HOOK_INSTRUCTION]:
+            h = self.mu.hook_add(UC_HOOK_CODE, hook_code, self)
+            self.hooks[HOOK_INSTRUCTION] = h
 
     def unset_hooks(self, mem_rw=False, mem_unmapped=False, basic_block=False, instruction=False):
-        self.mu.hook_del()
 
-        if mem_unmapped:
-            self.mu.hook_del(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED)
-            self.enabled_hooks.remove((UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED))
+        if mem_unmapped and self.hook[HOOK_MEM_UNMAPPED]:
+            h = self.mu.hook_del(self.hook[HOOK_MEM_UNMAPPED])
+            self.hooks[HOOK_MEM_UNMAPPED] = 0
 
-        if mem_rw:
-            self.mu.hook_del(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE)
-            self.enabled_hooks.remove((UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE))
+        if mem_rw and self.hooks[HOOK_MEM_RW]:
+            h = self.mu.hook_del(self.hook[HOOK_MEM_RW])
+            self.hooks[HOOK_MEM_RW] = 0
 
-        if basic_block:
-            self.mu.hook_del(UC_HOOK_BLOCK)
-            self.enabled_hooks.remove(UC_HOOK_BLOCK)
+        if basic_block and self.hooks[HOOK_BASIC_BLOCK]:
+            h = self.mu.hook_del(self.hooks[HOOK_BASIC_BLOCK])
+            self.hooks[HOOK_BASIC_BLOCK] = 0
 
-        if instruction:
-            self.mu.hook_del(UC_HOOK_CODE)
-            self.enabled_hooks.remove(UC_HOOK_CODE)
+        if instruction and self.hooks[HOOK_INSTRUCTION]:
+            self.mu.hook_del(self.hooks[HOOK_INSTRUCTION])
+            self.hooks[HOOK_INSTRUCTION] = 0
 
     def initialise_regs_random(self):
         for reg in self.registers:
@@ -146,12 +152,20 @@ class Emulator:
 
         return registers, mem
 
-    def add_breakpoint(self, addr, cb):
-        self.breakpoints[addr] = cb
+    def add_basic_block_breakpoint(self, addr, cb, *args):
+        self.basic_block_breakpoints[addr] = [cb, args]
 
-    def remove_breakpoint(self, addr):
-        if addr in self.breakpoints:
-            del [self.breakpoints[addr]]
+    def add_instruction_breakpoint(self, addr, cb, *args):
+        self.instruction_breakpoints[addr] = [cb, args]
+
+    def remove_breakpoint(self, addr, basic_block=False, instruction=False):
+        if basic_block:
+            if addr in self.basic_block_breakpoints:
+                del [self.basic_block_breakpoints[addr]]
+
+        if instruction:
+            if addr in self.instruction_breakpoints:
+                del [self.instruction_breakpoints[addr]]
 
     def set_traces(self, memory=False, basic_block=False, instruction=False):
         if memory:
