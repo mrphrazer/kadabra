@@ -30,7 +30,7 @@ emu.mem_map(START_ADDR, 2 * 1024 * 1024)
 
 emu.mem_write(START_ADDR, code)
 
-emu.add_hooks()
+emu.set_hooks()
 
 emu.reg_write("RBP", 0x11)
 emu.reg_write("RSP", 0x222)

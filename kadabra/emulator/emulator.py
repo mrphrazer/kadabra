@@ -17,12 +17,16 @@ class Emulator:
         self.arch = arch
         self.memory = Memory()
         self.breakpoints = dict()
+        self.basic_block_breakpoints_enabled = False
+        self.instruction_breakpoints_enabled = False
         self.memory_trace = False
         self.basic_block_trace = False
         self.instruction_trace = False
         self.memory_tracer = MemoryTracer()
         self.code_tracer = CodeTracer()
         self.verbosity_level = 0
+
+        self.enabled_hooks = set()
 
         self.start_addr = 0
         self.end_addr = 0
@@ -71,19 +75,49 @@ class Emulator:
         page_size = (int(size / PAGESIZE) * PAGESIZE) + PAGESIZE
 
         self.mu.mem_map(base_addr, page_size)
-        self.memory.map(base_addr, page_size)
+        # self.memory.map(base_addr, page_size)
 
     def mem_unmap(self, addr, size):
         self.mu.mem_unmap(addr, size)
         self.memory.unmap(addr, size)
 
-    def add_hooks(self):
-        self.mu.hook_add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED,
-                         hook_mem_invalid, self)
-        self.mu.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, hook_mem_access, self)
+    def set_hooks(self, mem_rw=False, mem_unmapped=False, basic_block=False, instruction=False):
 
-        self.mu.hook_add(UC_HOOK_CODE, hook_code, self)
-        self.mu.hook_add(UC_HOOK_BLOCK, hook_block, self)
+        if mem_unmapped and (UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED) not in self.enabled_hooks:
+            self.mu.hook_add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED,
+                             hook_mem_invalid, self)
+            self.enabled_hooks.add(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED)
+
+        if mem_rw and (UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE) not in self.enabled_hooks:
+            self.mu.hook_add(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE, hook_mem_access, self)
+            self.enabled_hooks.add((UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE))
+
+        if basic_block and UC_HOOK_BLOCK not in self.enabled_hooks:
+            self.mu.hook_add(UC_HOOK_BLOCK, hook_block, self)
+            self.enabled_hooks.add(UC_HOOK_BLOCK)
+
+        if instruction and UC_HOOK_CODE not in self.enabled_hooks:
+            self.mu.hook_add(UC_HOOK_CODE, hook_code, self)
+            self.enabled_hooks.add(UC_HOOK_CODE)
+
+    def unset_hooks(self, mem_rw=False, mem_unmapped=False, basic_block=False, instruction=False):
+        self.mu.hook_del()
+
+        if mem_unmapped:
+            self.mu.hook_del(UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED)
+            self.enabled_hooks.remove((UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED))
+
+        if mem_rw:
+            self.mu.hook_del(UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE)
+            self.enabled_hooks.remove((UC_HOOK_MEM_READ | UC_HOOK_MEM_WRITE))
+
+        if basic_block:
+            self.mu.hook_del(UC_HOOK_BLOCK)
+            self.enabled_hooks.remove(UC_HOOK_BLOCK)
+
+        if instruction:
+            self.mu.hook_del(UC_HOOK_CODE)
+            self.enabled_hooks.remove(UC_HOOK_CODE)
 
     def initialise_regs_random(self):
         for reg in self.registers:
@@ -121,10 +155,13 @@ class Emulator:
 
     def set_traces(self, memory=False, basic_block=False, instruction=False):
         if memory:
+            self.set_hooks(mem_rw=True)
             self.memory_trace = True
         if basic_block:
+            self.set_hooks(basic_block=True)
             self.basic_block_trace = True
         if instruction:
+            self.set_hooks(instruction=True)
             self.instruction_trace = True
 
     def unset_traces(self, memory=False, basic_block=False, instruction=False):
@@ -143,7 +180,24 @@ class Emulator:
         if instruction:
             self.code_tracer.reset_instruction_trace()
 
+    def enable_breakpoints(self, basic_block=False, instruction=False):
+        if basic_block:
+            self.set_hooks(basic_block=True)
+            self.basic_block_breakpoints_enabled = True
+
+        if instruction:
+            self.set_hooks(instruction=True)
+            self.instruction_breakpoints_enabled = True
+
+    def disable_breakpoints(self, basic_block=False, instruction=False):
+        if basic_block:
+            self.basic_block_breakpoints_enabled = False
+
+        if instruction:
+            self.instruction_breakpoints_enabled = False
+
     def enforce_path(self, path):
+        self.set_hooks(instruction=True)
         self.enforced_path = deque(path)
 
         while len(self.enforced_path) > 1:

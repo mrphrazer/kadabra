@@ -44,7 +44,7 @@ def hook_code(uc, address, size, emu):
         print "0x{:x};{}".format(address, opcode.encode("hex"))
 
     # handle breakpoint
-    if address in emu.breakpoints:
+    if emu.instruction_breakpoints_enabled and address in emu.breakpoints:
         call = emu.breakpoints[address](emu)
 
         # bp handler returns False
@@ -67,6 +67,14 @@ def hook_code(uc, address, size, emu):
 
 def hook_block(uc, address, size, emu):
     opcodes = str(emu.mem_read(address, size))
+
+    # handle breakpoint
+    if emu.basic_block_breakpoints_enabled and address in emu.breakpoints:
+        call = emu.breakpoints[address](emu)
+
+        # bp handler returns False
+        if not call:
+            emu.stop_execution()
 
     if emu.verbosity_level > 1:
         print "Basic block at 0x{:x}".format(address)
