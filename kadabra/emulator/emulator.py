@@ -32,6 +32,7 @@ class Emulator:
         self.end_addr = 0
         self.cont_addr = 0
         self.enforced_path = deque()
+        self.force_path = False
 
         self._initialise_hooks()
 
@@ -213,6 +214,7 @@ class Emulator:
     def enforce_path(self, path):
         self.set_hooks(instruction=True)
         self.enforced_path = deque(path)
+        self.force_path = True
 
         while len(self.enforced_path) > 1:
             start_addr = self.enforced_path[0][0]
@@ -225,3 +227,4 @@ class Emulator:
         self.start_execution(start_addr, end_addr)
 
         self.enforced_path = deque()
+        self.force_path = False

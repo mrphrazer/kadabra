@@ -57,11 +57,16 @@ def hook_code(uc, address, size, emu):
         # bp handler returns False
         if not call:
             emu.stop_execution()
+            return False
 
     if emu.instruction_trace:
         emu.code_tracer.add_instruction_trace(address, opcode, size)
 
-    if emu.enforced_path:
+    if emu.force_path:
+        if not emu.enforced_path:
+            emu.stop_execution()
+            return False
+
         path_addr, path_instr_size = emu.enforced_path.popleft()
 
         if path_addr != address:
