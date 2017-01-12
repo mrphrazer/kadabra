@@ -32,6 +32,13 @@ def hook_mem_access(uc, access, address, size, value, emu):
         emu.add_to_emulator_mem(address, value_hex)
 
     else:
+        # memory read index replacement
+        if emu.mem_read_index_map:
+            if emu.mem_read_index_counter in emu.mem_read_index_map:
+                value = emu.mem_read_index_map[emu.mem_read_index_counter]
+                emu.mem_write(address, value)
+            emu.mem_read_index_counter += 1
+
         value = addr_to_int(emu.mem_read(address, size))
         prev_value = value
         if emu.verbosity_level > 1:

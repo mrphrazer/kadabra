@@ -34,6 +34,9 @@ class Emulator:
         self.enforced_path = deque()
         self.force_path = False
 
+        self.mem_read_index_map = OrderedDict()
+        self.mem_read_index_counter = 0
+
         self._initialise_hooks()
 
     def reg_size(self, reg):
@@ -228,3 +231,9 @@ class Emulator:
 
         self.enforced_path = deque()
         self.force_path = False
+
+    def set_mem_read_index(self, index, val):
+        self.mem_read_index_map[index] = val
+
+    def unset_mem_read_index(self):
+        self.mem_read_index_map = OrderedDict()
