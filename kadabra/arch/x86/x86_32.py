@@ -24,5 +24,25 @@ class X86_32:
                                       ("EBP", (UC_X86_REG_EBP, 32)),
                                       ("ESP", (UC_X86_REG_ESP, 32)),
                                       ("EIP", (UC_X86_REG_EIP, 32)),
+
+                                      ("AX", (UC_X86_REG_AX, 16)),
+                                      ("BX", (UC_X86_REG_BX, 16)),
+                                      ("CX", (UC_X86_REG_CX, 16)),
+                                      ("DX", (UC_X86_REG_DX, 16)),
+                                      ("SI", (UC_X86_REG_SI, 16)),
+                                      ("DI", (UC_X86_REG_DI, 16)),
+                                      ("BP", (UC_X86_REG_BP, 16)),
+                                      ("SP", (UC_X86_REG_SP, 16)),
+                                      ("IP", (UC_X86_REG_IP, 16)),
+
+                                      ("AL", (UC_X86_REG_AL, 8)),
+                                      ("BL", (UC_X86_REG_BL, 8)),
+                                      ("CL", (UC_X86_REG_CL, 8)),
+                                      ("DL", (UC_X86_REG_DL, 8)),
+                                      ("SIL", (UC_X86_REG_SIL, 8)),
+                                      ("DIL", (UC_X86_REG_DIL, 8)),
+                                      ("BPL", (UC_X86_REG_BPL, 8)),
+                                      ("SPL", (UC_X86_REG_SPL, 8)),
+
                                       ("EFLAGS", (UC_X86_REG_EFLAGS, 32)),
                                       ])

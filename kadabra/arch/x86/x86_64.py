@@ -86,6 +86,5 @@ class X86_64:
                                       ("R14B", (UC_X86_REG_R14B, 8)),
                                       ("R15B", (UC_X86_REG_R15B, 8)),
 
-
                                       ("RFLAGS", (UC_X86_REG_EFLAGS, 64)),
                                       ])
