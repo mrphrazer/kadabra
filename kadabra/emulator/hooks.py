@@ -57,10 +57,12 @@ def hook_mem_access(uc, access, address, size, value, emu):
 
             opcode = str(emu.mem_read(current_address, size)).encode("hex")
             if opcode.startswith("c3") or opcode.startswith("cb"):
+                value = addr_to_int("\xdd\xdd\xdd\xdd")
                 emu.mem_write(address, "\xdd\xdd\xdd\xdd")
                 SP = emu.reg_read(emu.arch.SP)
                 emu.reg_write(emu.arch.SP, SP + 4)
             if opcode.startswith("c2") or opcode.startswith("ca"):
+                value = addr_to_int("\xdd\xdd\xdd\xdd")
                 emu.mem_write(address, "\xdd\xdd\xdd\xdd")
                 SP = emu.reg_read(emu.arch.SP)
                 v = addr_to_int(opcode[1:])
