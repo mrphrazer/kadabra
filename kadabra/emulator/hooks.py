@@ -81,7 +81,6 @@ def hook_code(uc, address, size, emu):
     opcode = str(emu.mem_read(address, size))
 
     if emu.stop_next_instruction:
-        print "Stopping at 0x{:x};{}".format(address, opcode.encode("hex"))
         emu.stop_execution()
 
     if address == emu.final_instruction:

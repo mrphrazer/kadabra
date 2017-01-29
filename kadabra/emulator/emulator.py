@@ -53,8 +53,6 @@ class Emulator:
 
     def reg_write(self, reg, val):
         reg = self.registers[reg][0]
-        if reg == 28:
-            print reg
         self.mu.reg_write(reg, val)
 
     def mem_read(self, addr, size):
