@@ -22,6 +22,21 @@ def hook_mem_access(uc, access, address, size, value, emu):
     current_address = emu.reg_read(emu.arch.IP)
     value = to_unsinged(value, size * 8)
 
+    if emu.stop_next_instruction:
+        opcode = str(emu.mem_read(current_address, size)).encode("hex")
+        skip = False
+        if not emu.skip_return:
+            for op in emu.arch.returns:
+                if opcode.startswith(op):
+                    emu.mem_write(address, "\xdd\xdd\xdd\xdd")
+                    skip = True
+        for op in emu.arch.calls:
+            if opcode.startswith(op):
+                emu.stop_execution()
+                skip = True
+        if not skip:
+            emu.stop_execution()
+
     if access == UC_MEM_WRITE:
 
         if emu.verbosity_level > 1:
@@ -39,8 +54,20 @@ def hook_mem_access(uc, access, address, size, value, emu):
                 emu.mem_write(address, value)
             emu.mem_read_index_counter += 1
 
+            opcode = str(emu.mem_read(current_address, size)).encode("hex")
+            if opcode.startswith("c3") or opcode.startswith("cb"):
+                emu.mem_write(address, "\xdd\xdd\xdd\xdd")
+            if opcode.startswith("e8") or opcode.startswith("9a") or opcode.startswith("ff"):
+                emu.stop_execution()
+
         value = addr_to_int(emu.mem_read(address, size))
+
+        if emu.no_zero_mem and value == 0:
+            value = 1
+            emu.mem_write(address, "\x01")
+
         prev_value = value
+
         if emu.verbosity_level > 1:
             print "Instruction 0x{:x} reads value 0x{:x} with 0x{:x} bytes from 0x{:x}".format(current_address, value,
                                                                                                size, address)
@@ -52,6 +79,18 @@ def hook_mem_access(uc, access, address, size, value, emu):
 
 def hook_code(uc, address, size, emu):
     opcode = str(emu.mem_read(address, size))
+
+    if emu.stop_next_instruction:
+        print "Stopping at 0x{:x};{}".format(address, opcode.encode("hex"))
+        emu.stop_execution()
+
+    if address == emu.final_instruction:
+        emu.stop_next_instruction = True
+        for op in emu.arch.jumps.union(emu.arch.conditional_jumps):
+            if opcode.encode("hex").startswith(op):
+                emu.stop_execution()
+                return False
+
     if emu.verbosity_level > 1:
         print "0x{:x};{}".format(address, opcode.encode("hex"))
 

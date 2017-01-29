@@ -34,6 +34,11 @@ class Emulator:
         self.enforced_path = deque()
         self.force_path = False
 
+        self.final_instruction = False
+        self.stop_next_instruction = False
+        self.no_zero_mem = False
+        self.skip_return = False
+
         self.mem_read_index_map = OrderedDict()
         self.mem_read_index_counter = 0
 
@@ -48,6 +53,8 @@ class Emulator:
 
     def reg_write(self, reg, val):
         reg = self.registers[reg][0]
+        if reg == 28:
+            print reg
         self.mu.reg_write(reg, val)
 
     def mem_read(self, addr, size):
@@ -62,10 +69,10 @@ class Emulator:
             current_addr = addr + offset
             self.memory[current_addr] = byte
 
-    def start_execution(self, start, end):
+    def start_execution(self, start, end, count=0):
         self.start_addr = start
         self.end_addr = end
-        self.mu.emu_start(start, end)
+        self.mu.emu_start(start, end, count=count)
 
     def stop_execution(self):
         self.cont_addr = self.reg_read(self.arch.IP)
@@ -129,11 +136,15 @@ class Emulator:
             self.mu.hook_del(self.hooks[HOOK_INSTRUCTION])
             self.hooks[HOOK_INSTRUCTION] = 0
 
-    def initialise_regs_random(self):
+    def initialise_regs_random(self, value=None):
         for reg in self.registers:
-            if reg == self.arch.IP or reg == self.arch.FLAGS:
+            if reg == self.arch.IP or reg == self.arch.FLAGS or reg in self.arch.segment_registers:
                 continue
-            self.reg_write(reg, getrandbits(self.arch.size))
+            if self.reg_size(reg) != self.arch.size:
+                continue
+            if not value:
+                value = getrandbits(self.reg_size(reg))
+            self.reg_write(reg, value)
 
     def dump_registers(self):
         dump = OrderedDict()

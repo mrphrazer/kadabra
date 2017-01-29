@@ -10,6 +10,8 @@ class X86_64:
         self.SP = "RSP"
         self.IP = "RIP"
         self.FLAGS = "RFLAGS"
+        self.segment_registers = set(["ES", "FS", "GS"])
+
         self.uc_arch = UC_ARCH_X86
         self.uc_mode = UC_MODE_64
 
@@ -85,6 +87,59 @@ class X86_64:
                                       ("R13B", (UC_X86_REG_R13B, 8)),
                                       ("R14B", (UC_X86_REG_R14B, 8)),
                                       ("R15B", (UC_X86_REG_R15B, 8)),
+                                      ("AH", (UC_X86_REG_AH, 8)),
+                                      ("BH", (UC_X86_REG_BH, 8)),
+                                      ("CH", (UC_X86_REG_CH, 8)),
+                                      ("DH", (UC_X86_REG_DH, 8)),
 
                                       ("RFLAGS", (UC_X86_REG_EFLAGS, 64)),
                                       ])
+
+        self.conditional_jumps = set(["70",
+                                      "71",
+                                      "72",
+                                      "73",
+                                      "74",
+                                      "75",
+                                      "76",
+                                      "77",
+                                      "78",
+                                      "79",
+                                      "7a",
+                                      "7b",
+                                      "7c",
+                                      "7d",
+                                      "7e",
+                                      "7f",
+                                      "e3",
+                                      "0f80",
+                                      "0f81",
+                                      "0f82",
+                                      "0f83",
+                                      "0f84",
+                                      "0f85",
+                                      "0f86",
+                                      "0f87",
+                                      "0f88",
+                                      "0f89",
+                                      "0f8a",
+                                      "0f8b",
+                                      "0f8c",
+                                      "0f8d",
+                                      "0f8e",
+                                      "0f8f",
+                                      ])
+        self.jumps = set(["ea",
+                          "eb",
+                          "e9",
+                          "ff",
+                          ])
+
+        self.returns = set(["c3",
+                            "cb",
+                            "c2",
+                            "ca"])
+
+        self.calls = set(["e8",
+                          "9a",
+                          "ff"])
