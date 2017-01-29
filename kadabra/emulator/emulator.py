@@ -76,8 +76,8 @@ class Emulator:
         self.cont_addr = self.reg_read(self.arch.IP)
         self.mu.emu_stop()
 
-    def continue_execution(self):
-        self.start_execution(self.cont_addr, self.end_addr)
+    def continue_execution(self, count=0):
+        self.start_execution(self.cont_addr, self.end_addr, count=count)
 
     def mem_map(self, addr, size):
         alignment = addr % PAGESIZE
