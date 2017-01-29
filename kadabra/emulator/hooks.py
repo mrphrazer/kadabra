@@ -55,21 +55,22 @@ def hook_mem_access(uc, access, address, size, value, emu):
                 emu.mem_write(address, value)
             emu.mem_read_index_counter += 1
 
-            opcode = str(emu.mem_read(current_address, size)).encode("hex")
-            if opcode.startswith("c3") or opcode.startswith("cb"):
-                value = addr_to_int("\xdd\xdd\xdd\xdd")
-                emu.mem_write(address, "\xdd\xdd\xdd\xdd")
-                SP = emu.reg_read(emu.arch.SP)
-                emu.reg_write(emu.arch.SP, SP + 4)
-            if opcode.startswith("c2") or opcode.startswith("ca"):
-                value = addr_to_int("\xdd\xdd\xdd\xdd")
-                emu.mem_write(address, "\xdd\xdd\xdd\xdd")
-                SP = emu.reg_read(emu.arch.SP)
-                v = addr_to_int(opcode[1:])
-                emu.reg_write(emu.arch.SP, SP + 4 + v)
+            if emu.stop_next_instruction:
+                opcode = str(emu.mem_read(current_address, size)).encode("hex")
+                if opcode.startswith("c3") or opcode.startswith("cb"):
+                    value = addr_to_int("\xdd\xdd\xdd\xdd")
+                    emu.mem_write(address, "\xdd\xdd\xdd\xdd")
+                    SP = emu.reg_read(emu.arch.SP)
+                    emu.reg_write(emu.arch.SP, SP + 4)
+                if opcode.startswith("c2") or opcode.startswith("ca"):
+                    value = addr_to_int("\xdd\xdd\xdd\xdd")
+                    emu.mem_write(address, "\xdd\xdd\xdd\xdd")
+                    SP = emu.reg_read(emu.arch.SP)
+                    v = addr_to_int(opcode[1:])
+                    emu.reg_write(emu.arch.SP, SP + 4 + v)
 
-            if opcode.startswith("e8") or opcode.startswith("9a") or opcode.startswith("ff"):
-                emu.stop_execution()
+                if opcode.startswith("e8") or opcode.startswith("9a") or opcode.startswith("ff"):
+                    emu.stop_execution()
 
         value = addr_to_int(emu.mem_read(address, size))
 
